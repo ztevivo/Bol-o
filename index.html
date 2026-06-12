@@ -6,7 +6,6 @@
 <title>Bolão Recreativo Copa</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="container">
@@ -85,14 +84,26 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL = 'https://iiyjhfrjqbnssyqsjbtb.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpeWpoZnJqcWJuc3N5cXNqYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MTA0MDYsImV4cCI6MjA5NjQ4NjQwNn0.eLdrKFfFup1-gaM9iQQaLej3U-J2uPYI0Dk8xsHz7GU';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: false }
-});
+let sb = null;
+
+function inicializar() {
+  const URL = 'https://iiyjhfrjqbnssyqsjbtb.supabase.co';
+  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpeWpoZnJqcWJuc3N5cXNqYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MTA0MDYsImV4cCI6MjA5NjQ4NjQwNn0.eLdrKFfFup1-gaM9iQQaLej3U-J2uPYI0Dk8xsHz7GU';
+  
+  if (window.supabase && !sb) {
+    sb = window.supabase.createClient(URL, KEY, { auth: { persistSession: false } });
+    console.log('Supabase inicializado com sucesso');
+    carregar();
+  } else if (!window.supabase) {
+    console.error('Biblioteca Supabase não carregou');
+  }
+}
 
 async function salvarPalpite() {
+  if (!sb) { alert('Erro: Supabase não inicializado'); return; }
+  
   try {
     const dados = {
       nome:            document.getElementById('nome').value.trim(),
@@ -105,7 +116,7 @@ async function salvarPalpite() {
 
     if (!dados.nome) { alert('Informe o nome.'); return; }
 
-    const { error } = await supabase.from('palpites').insert([dados]);
+    const { error } = await sb.from('palpites').insert([dados]);
     if (error) { alert('Erro ao salvar: ' + error.message); return; }
 
     alert('Palpite salvo com sucesso!');
@@ -116,47 +127,41 @@ async function salvarPalpite() {
     document.getElementById('golsAdv').value = '';
     carregar();
   } catch (err) {
+    console.error(err);
     alert('Falha ao conectar.');
   }
 }
 
 async function carregar() {
+  if (!sb) return;
+  
   try {
-    const { data, error } = await supabase
-      .from('palpites')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data, error } = await sb.from('palpites').select('*').order('created_at', { ascending: false });
 
     if (error) { 
-      console.error('Erro do Supabase:', error);
-      document.getElementById('lista').innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">Erro ao carregar dados: ${error.message}</td></tr>`;
+      console.error('Erro Supabase:', error);
+      document.getElementById('lista').innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">Erro: ${error.message}</td></tr>`;
       return; 
     }
 
     if (!data || data.length === 0) {
-      document.getElementById('lista').innerHTML = `<tr><td colspan="5" style="text-align:center;">Nenhum palpite no banco de dados.</td></tr>`;
+      document.getElementById('lista').innerHTML = `<tr><td colspan="5" style="text-align:center;">Nenhum palpite cadastrado.</td></tr>`;
       document.getElementById('totalArrecadado').innerHTML = "R$ 0,00";
       return;
     }
 
-    document.getElementById('lista').innerHTML = data.map(x => {
-        const valorNumerico = Number(x.valor_aposta || 0);
-        const valorFormatado = valorNumerico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        return `
-          <tr>
-            <td>${x.nome || ''}</td>
-            <td>${x.jogo || ''}</td>
-            <td class="palpite-celula">${x.gols_brasil ?? 0}x${x.gols_adversario ?? 0}</td>
-            <td>${valorFormatado}</td>
-            <td>
-              <div class="acoes-buttons">
-                <button class="btn-editar" onclick="editarPalpite('${x.id}', '${x.nome || ''}', '${x.gols_brasil ?? 0}', '${x.gols_adversario ?? 0}')">Editar</button>
-                <button class="btn-excluir" onclick="deletarPalpite('${x.id}')">Excluir</button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
+    document.getElementById('lista').innerHTML = data.map(x => `
+      <tr>
+        <td>${x.nome || ''}</td>
+        <td>${x.jogo || ''}</td>
+        <td>${x.gols_brasil ?? 0}x${x.gols_adversario ?? 0}</td>
+        <td>${Number(x.valor_aposta || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>
+          <button class="btn-editar" onclick="editarPalpite('${x.id}', '${x.nome || ''}', ${x.gols_brasil ?? 0}, ${x.gols_adversario ?? 0})">Editar</button>
+          <button class="btn-excluir" onclick="deletarPalpite('${x.id}')">Excluir</button>
+        </td>
+      </tr>
+    `).join('');
 
     let total = 0;
     data.forEach(x => total += Number(x.valor_aposta || 0));
@@ -170,7 +175,7 @@ async function carregar() {
 async function deletarPalpite(id) {
   if (!confirm('Deseja realmente excluir este palpite?')) return;
   try {
-    const { error } = await supabase.from('palpites').delete().eq('id', id);
+    const { error } = await sb.from('palpites').delete().eq('id', id);
     if (error) { alert('Erro ao deletar: ' + error.message); return; }
     carregar();
   } catch (err) {
@@ -188,7 +193,7 @@ function editarPalpite(id, nomeAtual, golsB, golsA) {
 
 async function atualizarPalpite(id, gb, ga) {
   try {
-    const { error } = await supabase.from('palpites').update({ gols_brasil: gb, gols_adversario: ga }).eq('id', id);
+    const { error } = await sb.from('palpites').update({ gols_brasil: gb, gols_adversario: ga }).eq('id', id);
     if (error) { alert('Erro ao atualizar: ' + error.message); return; }
     carregar();
   } catch (err) {
@@ -201,8 +206,9 @@ function distancia(p, r) {
 }
 
 async function apurar() {
+  if (!sb) return;
   try {
-    const { data, error } = await supabase.from('palpites').select('*').eq('jogo', document.getElementById('resultadoJogo').value);
+    const { data, error } = await sb.from('palpites').select('*').eq('jogo', document.getElementById('resultadoJogo').value);
     if (error) { alert('Erro: ' + error.message); return; }
     if (!data || !data.length) { alert('Nenhum palpite encontrado.'); return; }
 
@@ -219,7 +225,7 @@ async function apurar() {
   }
 }
 
-window.addEventListener('load', carregar);
+inicializar();
 </script>
 </body>
 </html>
