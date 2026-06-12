@@ -126,6 +126,11 @@ function inicializar() {
     sb = window.supabase.createClient(URL, KEY, { auth: { persistSession: false } });
     console.log('✅ Supabase inicializado com sucesso');
     carregar();
+    
+    document
+    .getElementById('jogo')
+    .addEventListener('change', carregar);
+}
   } else if (!window.supabase) {
     console.error('❌ Biblioteca Supabase não carregou');
   }
@@ -166,7 +171,14 @@ async function carregar() {
   if (!sb) return;
   
   try {
-    const { data, error } = await sb.from('palpites').select('*').order('created_at', { ascending: false });
+    const jogoSelecionado =
+  document.getElementById('jogo').value;
+
+const { data, error } = await sb
+  .from('palpites')
+  .select('*')
+  .eq('jogo', jogoSelecionado)
+  .order('created_at', { ascending: false });
 
     if (error) { 
       console.error('Erro Supabase:', error);
