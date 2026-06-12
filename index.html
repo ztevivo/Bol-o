@@ -6,6 +6,16 @@
 <title>Bolão Recreativo Copa</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<style>
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+.modal.ativo { display: flex; }
+.modal-conteudo { background: #101b2c; border-radius: 18px; padding: 30px; width: 90%; max-width: 500px; color: #f8fafc; }
+.modal-conteudo h2 { margin-bottom: 20px; color: #ffd54f; }
+.modal-conteudo input, .modal-conteudo select { width: 100%; padding: 10px; margin-bottom: 15px; border: none; border-radius: 10px; background: #243247; color: #fff; font-family: Poppins, sans-serif; }
+.modal-conteudo button { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-family: Poppins, sans-serif; }
+.btn-salvar { background: #17c964; color: #fff; }
+.btn-cancelar { background: #666; color: #fff; }
+</style>
 </head>
 <body>
 <div class="container">
@@ -84,6 +94,26 @@
   </div>
 </div>
 
+<!-- MODAL DE EDIÇÃO -->
+<div class="modal" id="modalEditar">
+  <div class="modal-conteudo">
+    <h2>Editar Palpite</h2>
+    <input type="hidden" id="editId">
+    <input id="editNome" placeholder="Nome" type="text">
+    <input id="editTelefone" placeholder="Telefone" type="text">
+    <select id="editJogo">
+      <option>Brasil x Marrocos</option>
+      <option>Brasil x Haiti</option>
+      <option>Brasil x Escócia</option>
+    </select>
+    <input id="editValor" placeholder="Valor" type="number" step="0.01">
+    <input id="editGolsBrasil" placeholder="Gols Brasil" type="number">
+    <input id="editGolsAdv" placeholder="Gols Adversário" type="number">
+    <button class="btn-salvar" onclick="salvarEdicao()">Salvar Alterações</button>
+    <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 let sb = null;
@@ -94,10 +124,10 @@ function inicializar() {
   
   if (window.supabase && !sb) {
     sb = window.supabase.createClient(URL, KEY, { auth: { persistSession: false } });
-    console.log('Supabase inicializado com sucesso');
+    console.log('✅ Supabase inicializado com sucesso');
     carregar();
   } else if (!window.supabase) {
-    console.error('Biblioteca Supabase não carregou');
+    console.error('❌ Biblioteca Supabase não carregou');
   }
 }
 
@@ -157,7 +187,7 @@ async function carregar() {
         <td>${x.gols_brasil ?? 0}x${x.gols_adversario ?? 0}</td>
         <td>${Number(x.valor_aposta || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
         <td>
-          <button class="btn-editar" onclick="editarPalpite('${x.id}', '${x.nome || ''}', ${x.gols_brasil ?? 0}, ${x.gols_adversario ?? 0})">Editar</button>
+          <button class="btn-editar" onclick="abrirModal('${x.id}', '${x.nome || ''}', '${x.telefone || ''}', '${x.jogo || ''}', ${x.valor_aposta || 0}, ${x.gols_brasil ?? 0}, ${x.gols_adversario ?? 0})">Editar</button>
           <button class="btn-excluir" onclick="deletarPalpite('${x.id}')">Excluir</button>
         </td>
       </tr>
@@ -172,29 +202,51 @@ async function carregar() {
   }
 }
 
+function abrirModal(id, nome, telefone, jogo, valor, golsB, golsA) {
+  document.getElementById('editId').value = id;
+  document.getElementById('editNome').value = nome;
+  document.getElementById('editTelefone').value = telefone;
+  document.getElementById('editJogo').value = jogo;
+  document.getElementById('editValor').value = valor;
+  document.getElementById('editGolsBrasil').value = golsB;
+  document.getElementById('editGolsAdv').value = golsA;
+  document.getElementById('modalEditar').classList.add('ativo');
+}
+
+function fecharModal() {
+  document.getElementById('modalEditar').classList.remove('ativo');
+}
+
+async function salvarEdicao() {
+  if (!sb) return;
+  
+  const id = document.getElementById('editId').value;
+  const dados = {
+    nome: document.getElementById('editNome').value.trim(),
+    telefone: document.getElementById('editTelefone').value.trim(),
+    jogo: document.getElementById('editJogo').value,
+    valor_aposta: Number(document.getElementById('editValor').value || 0),
+    gols_brasil: Number(document.getElementById('editGolsBrasil').value || 0),
+    gols_adversario: Number(document.getElementById('editGolsAdv').value || 0)
+  };
+
+  try {
+    const { error } = await sb.from('palpites').update(dados).eq('id', id);
+    if (error) { alert('Erro ao atualizar: ' + error.message); return; }
+    alert('Palpite atualizado com sucesso!');
+    fecharModal();
+    carregar();
+  } catch (err) {
+    console.error(err);
+    alert('Erro ao salvar');
+  }
+}
+
 async function deletarPalpite(id) {
   if (!confirm('Deseja realmente excluir este palpite?')) return;
   try {
     const { error } = await sb.from('palpites').delete().eq('id', id);
     if (error) { alert('Erro ao deletar: ' + error.message); return; }
-    carregar();
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-function editarPalpite(id, nomeAtual, golsB, golsA) {
-  const novoGolsB = prompt(`Editar gols do Brasil para ${nomeAtual}:`, golsB);
-  if (novoGolsB === null) return;
-  const novoGolsA = prompt(`Editar gols do Adversário para ${nomeAtual}:`, golsA);
-  if (novoGolsA === null) return;
-  atualizarPalpite(id, Number(novoGolsB), Number(novoGolsA));
-}
-
-async function atualizarPalpite(id, gb, ga) {
-  try {
-    const { error } = await sb.from('palpites').update({ gols_brasil: gb, gols_adversario: ga }).eq('id', id);
-    if (error) { alert('Erro ao atualizar: ' + error.message); return; }
     carregar();
   } catch (err) {
     console.error(err);
