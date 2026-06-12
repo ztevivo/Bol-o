@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bolão Recreativo Copa</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="container">
@@ -55,7 +55,7 @@
               <th>Ações</th>
             </tr>
           </thead>
-          <tbody id="lista"></tbody>
+          <tbody id="lista"><tr><td colspan="5" style="text-align:center;">Carregando...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -86,7 +86,6 @@
 </div>
 
 <script>
-// Única declaração permitida para evitar o erro do console
 const SUPABASE_URL = 'https://iiyjhfrjqbnssyqsjbtb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpeWpoZnJqcWJuc3N5cXNqYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MTA0MDYsImV4cCI6MjA5NjQ4NjQwNn0.eLdrKFfFup1-gaM9iQQaLej3U-J2uPYI0Dk8xsHz7GU';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -109,7 +108,7 @@ async function salvarPalpite() {
     const { error } = await supabase.from('palpites').insert([dados]);
     if (error) { alert('Erro ao salvar: ' + error.message); return; }
 
-    alert('Palpite saved com sucesso!');
+    alert('Palpite salvo com sucesso!');
     document.getElementById('nome').value = '';
     document.getElementById('telefone').value = '';
     document.getElementById('valorAposta').value = '';
@@ -125,10 +124,12 @@ async function carregar() {
   try {
     const { data, error } = await supabase
       .from('palpites')
-      .select('*');
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) { 
-      alert('Erro do Supabase: ' + error.message);
+      console.error('Erro do Supabase:', error);
+      document.getElementById('lista').innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">Erro ao carregar dados: ${error.message}</td></tr>`;
       return; 
     }
 
@@ -137,9 +138,6 @@ async function carregar() {
       document.getElementById('totalArrecadado').innerHTML = "R$ 0,00";
       return;
     }
-
-    // Ordenação decrescente por data
-    data.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
     document.getElementById('lista').innerHTML = data.map(x => {
         const valorNumerico = Number(x.valor_aposta || 0);
@@ -165,7 +163,7 @@ async function carregar() {
     document.getElementById('totalArrecadado').innerHTML = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   } catch (err) {
-    console.error(err);
+    console.error('Erro ao carregar:', err);
   }
 }
 
@@ -221,7 +219,7 @@ async function apurar() {
   }
 }
 
-carregar();
+window.addEventListener('load', carregar);
 </script>
 </body>
 </html>
