@@ -1,1 +1,306 @@
+:root{
+    --bg:#07111f;
+    --card:#101b2c;
+    --card2:#16243a;
+    --gold:#ffd54f;
+    --green:#17c964;
+    --text:#f8fafc;
+    --muted:#aeb8c5;
+    --blue-btn: #3498db;
+    --orange-btn: #e67e22;
+}
 
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    font-family:'Poppins',sans-serif;
+    background:
+        radial-gradient(
+            circle at top,
+            #16345f 0%,
+            #07111f 55%
+        );
+
+    color:var(--text);
+
+    min-height:100vh;
+
+    padding:30px;
+}
+
+.container{
+    width:100%;
+    max-width:1400px;
+    margin:0 auto;
+}
+
+.header{
+    text-align:center;
+    margin-bottom:35px;
+}
+
+.header h1{
+    font-size:42px;
+    color:var(--gold);
+    margin-bottom:8px;
+}
+
+.header p{
+    color:var(--muted);
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:25px;
+}
+
+.card{
+    background:var(--card);
+
+    border-radius:22px;
+
+    padding:24px;
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.25);
+
+    border:
+        1px solid rgba(255,255,255,.05);
+}
+
+.card h2{
+    margin-bottom:18px;
+}
+
+.matches{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+.match{
+    background:var(--card2);
+
+    padding:18px;
+
+    border-radius:18px;
+}
+
+.teams{
+    display:grid;
+    grid-template-columns:1fr 120px 1fr;
+    align-items:center;
+}
+
+.team{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.team-right{
+    justify-content:flex-end;
+    text-align:right;
+}
+
+.team img{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+}
+
+.vs{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    font-size:28px;
+    font-weight:700;
+    color:var(--gold);
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
+}
+
+input,
+select{
+    width:100%;
+
+    padding:12px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:#243247;
+
+    color:white;
+
+    font-size:14px;
+}
+
+input:focus,
+select:focus{
+    outline:none;
+
+    box-shadow:
+        0 0 0 2px var(--green);
+}
+
+button{
+    width:100%;
+
+    padding:12px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:var(--green);
+
+    color:white;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+button:hover{
+    transform:translateY(-2px);
+
+    opacity:.95;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead{
+    background:#18253a;
+}
+
+th{
+    text-align:left;
+}
+
+th,
+td{
+    padding:12px;
+    border-bottom:
+        1px solid rgba(255,255,255,.08);
+}
+
+tbody tr:hover{
+    background:
+        rgba(255,255,255,.03);
+}
+
+/* Customizações baseadas na imagem do painel */
+.palpite-celula {
+    letter-spacing: 1px;
+}
+
+.acoes-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-editar, .btn-excluir {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 8px;
+    width: auto;
+    font-weight: 500;
+}
+
+.btn-editar {
+    background: var(--blue-btn);
+}
+
+.btn-excluir {
+    background: var(--orange-btn);
+}
+
+.winner-card{
+    margin-top:20px;
+
+    padding:20px;
+
+    border-radius:18px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f5c542,
+            #ffeb99
+        );
+
+    color:#111;
+}
+
+.stat{
+    margin-top:20px;
+
+    background:#1a273a;
+
+    padding:18px;
+
+    border-radius:15px;
+
+    text-align:center;
+}
+
+.stat-value{
+    font-size:30px;
+
+    font-weight:700;
+
+    color:var(--gold);
+}
+
+@media (max-width:1000px){
+
+    body{
+        padding:15px;
+    }
+
+    .grid{
+        grid-template-columns:1fr;
+    }
+
+    .form-grid{
+        grid-template-columns:1fr;
+    }
+
+    .header h1{
+        font-size:30px;
+    }
+
+    .teams{
+        grid-template-columns:1fr;
+        gap:10px;
+    }
+
+    .team-right{
+        justify-content:flex-start;
+    }
+
+    .vs{
+        font-size:20px;
+    }
+}
