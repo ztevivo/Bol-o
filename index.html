@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bolão Recreativo Copa</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🏆 Bolão da Copa</h1>
+    <p>Versão Recreativa</p>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Jogos do Brasil</h2><br>
+        <div class="matches">
+          <div class="match"><div class="teams"><div class="team"><img src="https://flagcdn.com/w80/br.png"><span>Brasil</span></div><div class="vs">VS</div><div class="team team-right"><span>Marrocos</span><img src="https://flagcdn.com/w80/ma.png"></div></div></div>
+          <div class="match"><div class="teams"><div class="team"><img src="https://flagcdn.com/w80/br.png"><span>Brasil</span></div><div class="vs">VS</div><div class="team team-right"><span>Haiti</span><img src="https://flagcdn.com/w80/ht.png"></div></div></div>
+          <div class="match"><div class="teams"><div class="team"><img src="https://flagcdn.com/w80/br.png"><span>Brasil</span></div><div class="vs">VS</div><div class="team team-right"><span>Escócia</span><img src="https://flagcdn.com/w80/gb-sct.png"></div></div></div>
+        </div>
+      </div><br>
+
+      <div class="card">
+        <h2>Cadastrar Palpite</h2><br>
+        <div class="form-grid">
+          <input id="nome" placeholder="Nome">
+          <input id="telefone" placeholder="Telefone">
+          <select id="jogo">
+            <option>Brasil x Marrocos</option>
+            <option>Brasil x Haiti</option>
+            <option>Brasil x Escócia</option>
+          </select>
+          <input id="valorAposta" type="number" step="0.01" placeholder="Valor da Participação">
+          <input id="golsBrasil" type="number" placeholder="Gols Brasil">
+          <input id="golsAdv" type="number" placeholder="Gols Adversário">
+        </div><br>
+        <button onclick="salvarPalpite()">Salvar Palpite</button>
+      </div><br>
+
+      <div class="card">
+        <h2>Palpites Registrados</h2><br>
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Jogo</th>
+              <th>Palpite</th>
+              <th>Valor</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="lista"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>Resultado Oficial</h2><br>
+        <select id="resultadoJogo">
+          <option>Brasil x Marrocos</option>
+          <option>Brasil x Haiti</option>
+          <option>Brasil x Escócia</option>
+        </select><br><br>
+        <input id="rBrasil" type="number" placeholder="Gols Brasil"><br><br>
+        <input id="rAdv" type="number" placeholder="Gols Adversário"><br><br>
+        <button onclick="apurar()">Apurar Resultado</button>
+
+        <div id="winner" class="winner-card">
+          Aguardando resultado...
+        </div>
+
+        <div class="stat">
+          <div id="totalArrecadado" class="stat-value">R$ 0,00</div>
+          <div>Total de Participações</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Única declaração permitida para evitar o erro do console
+const SUPABASE_URL = 'https://iiyjhfrjqbnssyqsjbtb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpeWpoZnJqcWJuc3N5cXNqYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MTA0MDYsImV4cCI6MjA5NjQ4NjQwNn0.eLdrKFfFup1-gaM9iQQaLej3U-J2uPYI0Dk8xsHz7GU';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false }
+});
+
+async function salvarPalpite() {
+  try {
+    const dados = {
+      nome:            document.getElementById('nome').value.trim(),
+      telefone:        document.getElementById('telefone').value.trim(),
+      jogo:            document.getElementById('jogo').value,
+      valor_aposta:    Number(document.getElementById('valorAposta').value || 0),
+      gols_brasil:     Number(document.getElementById('golsBrasil').value || 0),
+      gols_adversario: Number(document.getElementById('golsAdv').value || 0)
+    };
+
+    if (!dados.nome) { alert('Informe o nome.'); return; }
+
+    const { error } = await supabase.from('palpites').insert([dados]);
+    if (error) { alert('Erro ao salvar: ' + error.message); return; }
+
+    alert('Palpite saved com sucesso!');
+    document.getElementById('nome').value = '';
+    document.getElementById('telefone').value = '';
+    document.getElementById('valorAposta').value = '';
+    document.getElementById('golsBrasil').value = '';
+    document.getElementById('golsAdv').value = '';
+    carregar();
+  } catch (err) {
+    alert('Falha ao conectar.');
+  }
+}
+
+async function carregar() {
+  try {
+    const { data, error } = await supabase
+      .from('palpites')
+      .select('*');
+
+    if (error) { 
+      alert('Erro do Supabase: ' + error.message);
+      return; 
+    }
+
+    if (!data || data.length === 0) {
+      document.getElementById('lista').innerHTML = `<tr><td colspan="5" style="text-align:center;">Nenhum palpite no banco de dados.</td></tr>`;
+      document.getElementById('totalArrecadado').innerHTML = "R$ 0,00";
+      return;
+    }
+
+    // Ordenação decrescente por data
+    data.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+    document.getElementById('lista').innerHTML = data.map(x => {
+        const valorNumerico = Number(x.valor_aposta || 0);
+        const valorFormatado = valorNumerico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        return `
+          <tr>
+            <td>${x.nome || ''}</td>
+            <td>${x.jogo || ''}</td>
+            <td class="palpite-celula">${x.gols_brasil ?? 0}x${x.gols_adversario ?? 0}</td>
+            <td>${valorFormatado}</td>
+            <td>
+              <div class="acoes-buttons">
+                <button class="btn-editar" onclick="editarPalpite('${x.id}', '${x.nome || ''}', '${x.gols_brasil ?? 0}', '${x.gols_adversario ?? 0}')">Editar</button>
+                <button class="btn-excluir" onclick="deletarPalpite('${x.id}')">Excluir</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+    let total = 0;
+    data.forEach(x => total += Number(x.valor_aposta || 0));
+    document.getElementById('totalArrecadado').innerHTML = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function deletarPalpite(id) {
+  if (!confirm('Deseja realmente excluir este palpite?')) return;
+  try {
+    const { error } = await supabase.from('palpites').delete().eq('id', id);
+    if (error) { alert('Erro ao deletar: ' + error.message); return; }
+    carregar();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function editarPalpite(id, nomeAtual, golsB, golsA) {
+  const novoGolsB = prompt(`Editar gols do Brasil para ${nomeAtual}:`, golsB);
+  if (novoGolsB === null) return;
+  const novoGolsA = prompt(`Editar gols do Adversário para ${nomeAtual}:`, golsA);
+  if (novoGolsA === null) return;
+  atualizarPalpite(id, Number(novoGolsB), Number(novoGolsA));
+}
+
+async function atualizarPalpite(id, gb, ga) {
+  try {
+    const { error } = await supabase.from('palpites').update({ gols_brasil: gb, gols_adversario: ga }).eq('id', id);
+    if (error) { alert('Erro ao atualizar: ' + error.message); return; }
+    carregar();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function distancia(p, r) {
+  return Math.abs(p.gols_brasil - r.gb) + Math.abs(p.gols_adversario - r.ga);
+}
+
+async function apurar() {
+  try {
+    const { data, error } = await supabase.from('palpites').select('*').eq('jogo', document.getElementById('resultadoJogo').value);
+    if (error) { alert('Erro: ' + error.message); return; }
+    if (!data || !data.length) { alert('Nenhum palpite encontrado.'); return; }
+
+    const r = {
+      gb: Number(document.getElementById('rBrasil').value),
+      ga: Number(document.getElementById('rAdv').value)
+    };
+
+    data.sort((a, b) => distancia(a, r) - distancia(b, r));
+    const m = data[0];
+    document.getElementById('winner').innerHTML = `<h2>🏆 ${m.nome}</h2><p>Palpite: ${m.gols_brasil} x ${m.gols_adversario}</p>`;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+carregar();
+</script>
+</body>
+</html>
